@@ -1,18 +1,29 @@
 'use client';
 import React, { useState, useEffect } from 'react'
 
-// Assign each number an emotion type
-const getEmotion = (num) => {
+// Randomly assign emotions to about 1 in 10 numbers (10% chance)
+const getEmotion = (index) => {
+  // Use index as seed for consistent emotion assignment
+  const random = Math.sin(index * 12.9898) * 43758.5453;
+  const chance = random - Math.floor(random);
+  
+  // Only 10% of numbers get special emotions
+  if (chance < 0.05) {
+    const emotions = ['woe', 'frolic', 'dread', 'malice'];
+    return emotions[Math.floor(chance * 40) % 4];
+  }
+  
+  // Default emotion for the other 90% of numbers
   const emotions = ['woe', 'frolic', 'dread', 'malice'];
-  return emotions[num % 4];
+  return emotions[index % 4];
 };
 
 // Generate random float animation for each number
 const generateRandomFloat = (index) => {
-  const randomX = (Math.random() - 0.5) * 6; // Reduced from 11 to 6 for less movement
+  const randomX = (Math.random() - 0.5) * 6;
   const randomY = (Math.random() - 0.5) * 6;
-  const duration = 4 + Math.random() * 3; // Slightly longer durations
-  const delay = Math.random() * 1; // Reduced delay from 2s to 1s
+  const duration = 4 + Math.random() * 3;
+  const delay = Math.random() * 1;
   
   return `
     @keyframes random-float-${index} {
@@ -213,7 +224,7 @@ function ConsoleBox() {
       <div className="grid grid-cols-24">
         {Array.from({ length: 24 * 24 }).map((_, index) => {
           const num = (index % 9 + 1);
-          const emotion = getEmotion(num);
+          const emotion = getEmotion(index);
           const isHovered = hoveredIndex === index;
           const isNearby = isNeighbor(index, hoveredIndex);
           
