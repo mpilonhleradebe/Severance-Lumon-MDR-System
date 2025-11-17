@@ -20,8 +20,8 @@ const getEmotion = (index) => {
 
 // Generate random float animation for each number
 const generateRandomFloat = (index) => {
-  const randomX = (Math.random() - 0.5) * 6;
-  const randomY = (Math.random() - 0.5) * 6;
+  const randomX = (Math.random() - 0.5) * 18;
+  const randomY = (Math.random() - 0.5) * 18;
   const duration = 4 + Math.random() * 3;
   const delay = Math.random() * 1;
   
@@ -31,10 +31,10 @@ const generateRandomFloat = (index) => {
         transform: translate(0px, 0px) scale(1);
       }
       33% { 
-        transform: translate(${randomX}px, ${randomY}px) scale(1);
+        transform: translate(${randomX}px, ${randomY}px) scale(1.15);
       }
       66% { 
-        transform: translate(${randomX * 0.5}px, ${randomY * 0.5}px) scale(1);
+        transform: translate(${randomX * 0.5}px, ${randomY * 0.5}px) scale(1.1);
       }
     }
     
@@ -76,7 +76,7 @@ function ConsoleBox() {
 
   return (
     <div
-      className="w-full h-190 bg-[#0D1623] rounded-[25px] p-4 overflow-y-auto"
+      className="w-full h-180 bg-[#0D1623] rounded-[25px] p-4 overflow-y-auto"
       style={{ boxShadow: "inset 0 0 20px 20px #0B131C" }}>
       
       {/* Distinct Motion-Based Emotion Animations */}
@@ -246,7 +246,7 @@ function ConsoleBox() {
                 color: isHovered ? '#A3F3FA' : isNearby ? '#A3F3FA' : '#0CECF7',
                 fontWeight: isHovered ? '500' : isNearby ? '400' : '300',
                 opacity: isHovered ? 1 : isNearby ? 0.9 : 0.7,
-                zIndex: isHovered ? 20 : isNearby ? 10 : 1,
+                // zIndex: isHovered ? 20 : isNearby ? 10 : 1,
                 filter: isHovered 
                   ? `drop-shadow(0 0 8px rgba(163, 243, 250, 0.8))` 
                   : isNearby 
