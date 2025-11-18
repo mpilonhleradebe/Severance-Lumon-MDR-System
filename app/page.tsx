@@ -1,11 +1,153 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import Image from "next/image";
 import ConsoleBox from "./Components/ConsoleBox";
 import Buckets from './Components/Buckets';
 
+// Emotion assignment function
+const getEmotion = (index: number): string => {
+  const emotions = ['woe', 'frolic', 'dread', 'malice'];
+  const random = Math.sin(index * 12.9898) * 43758.5453;
+  const chance = random - Math.floor(random);
+  return emotions[Math.floor(chance * emotions.length) % emotions.length];
+};
+
+// Generate initial numbers grid
+const generateInitialGrid = () => {
+  const grid = [];
+  for (let i = 0; i < 24 * 24; i++) {
+    grid.push({
+      number: (i % 9) + 1,
+      emotion: getEmotion(i),
+      index: i,
+      id: i,
+      isRefined: false,
+      isBeingDragged: false // Track if number is currently being dragged
+    });
+  }
+  return grid;
+};
+
 export default function Home() {
-  const audioRef = useRef(null);
+  const [refinedNumbers, setRefinedNumbers] = useState(0);
+  const [numbersGrid, setNumbersGrid] = useState<any[]>([]);
+  const [buckets, setBuckets] = useState([
+    { percentage: 0, emotions: { woe: 0, frolic: 0, dread: 0, malice: 0 } },
+    { percentage: 0, emotions: { woe: 0, frolic: 0, dread: 0, malice: 0 } },
+    { percentage: 0, emotions: { woe: 0, frolic: 0, dread: 0, malice: 0 } },
+    { percentage: 0, emotions: { woe: 0, frolic: 0, dread: 0, malice: 0 } },
+    { percentage: 0, emotions: { woe: 0, frolic: 0, dread: 0, malice: 0 } },
+  ]);
+
+  // Initialize numbers grid
+  useEffect(() => {
+    setNumbersGrid(generateInitialGrid());
+  }, []);
+
+  const handleDragStart = (clusterData: any[]) => {
+    setNumbersGrid(prevGrid => {
+      const newGrid = [...prevGrid];
+      
+      // Mark numbers as being dragged (show dots immediately)
+      clusterData.forEach((numberData) => {
+        const index = numberData.index;
+        if (newGrid[index]) {
+          newGrid[index] = {
+            ...newGrid[index],
+            isBeingDragged: true
+          };
+        }
+      });
+
+      return newGrid;
+    });
+  };
+
+  const handleNumberDropped = (bucketNum: number, clusterData: any[]) => {
+    // Update buckets with smooth percentage increases
+    setBuckets(prevBuckets => {
+      const newBuckets = [...prevBuckets];
+      const targetBucket = newBuckets[bucketNum - 1];
+
+      // Calculate new percentages
+      const numbersPerEmotion: any = {};
+      clusterData.forEach((numberData) => {
+        const emotion = numberData.emotion;
+        numbersPerEmotion[emotion] = (numbersPerEmotion[emotion] || 0) + 1;
+      });
+
+      // Update emotion percentages (each number adds ~3-5%)
+      Object.keys(numbersPerEmotion).forEach(emotion => {
+        const count = numbersPerEmotion[emotion];
+        const increase = Math.min(8, count * 2 + Math.random() * 3);
+        targetBucket.emotions[emotion] = Math.min(100, targetBucket.emotions[emotion] + increase);
+      });
+
+      // Update overall percentage (each cluster adds ~5-10%)
+      const overallIncrease = Math.min(15, clusterData.length + Math.random() * 8);
+      targetBucket.percentage = Math.min(100, targetBucket.percentage + overallIncrease);
+
+      return newBuckets;
+    });
+
+    setRefinedNumbers(prev => prev + clusterData.length);
+
+    // Mark numbers as permanently refined after drop
+    setNumbersGrid(prevGrid => {
+      const newGrid = [...prevGrid];
+      clusterData.forEach((numberData) => {
+        const index = numberData.index;
+        if (newGrid[index]) {
+          newGrid[index] = {
+            ...newGrid[index],
+            isRefined: true,
+            isBeingDragged: false,
+            refinedAt: Date.now()
+          };
+        }
+      });
+      return newGrid;
+    });
+
+    // Generate new numbers after a delay for smooth transition
+    setTimeout(() => {
+      setNumbersGrid(prevGrid => {
+        const newGrid = [...prevGrid];
+        clusterData.forEach((numberData) => {
+          const index = numberData.index;
+          if (newGrid[index] && newGrid[index].isRefined) {
+            newGrid[index] = {
+              number: (Math.floor(Math.random() * 9) + 1),
+              emotion: getEmotion(index),
+              index: index,
+              id: Date.now() + index,
+              isRefined: false,
+              isBeingDragged: false
+            };
+          }
+        });
+        return newGrid;
+      });
+    }, 800);
+  };
+
+  const handleDragEnd = (clusterData: any[]) => {
+    // If drag was cancelled (not dropped on bucket), revert the dragged state
+    setNumbersGrid(prevGrid => {
+      const newGrid = [...prevGrid];
+      clusterData.forEach((numberData) => {
+        const index = numberData.index;
+        if (newGrid[index] && newGrid[index].isBeingDragged && !newGrid[index].isRefined) {
+          newGrid[index] = {
+            ...newGrid[index],
+            isBeingDragged: false
+          };
+        }
+      });
+      return newGrid;
+    });
+  };
+
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [hasInteracted, setHasInteracted] = useState(false);
 
   const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -17,11 +159,16 @@ export default function Home() {
     return code;
   };
 
-  const randomCode1 = generateCode();
-  const randomCode2 = generateCode();
+  const [randomCodes, setRandomCodes] = useState({ code1: '', code2: '' });
 
   useEffect(() => {
-    // Try to autoplay immediately
+    setRandomCodes({
+      code1: generateCode(),
+      code2: generateCode()
+    });
+  }, []);
+
+  useEffect(() => {
     if (audioRef.current) {
       audioRef.current.play()
         .then(() => setHasInteracted(true))
@@ -30,7 +177,6 @@ export default function Home() {
         });
     }
 
-    // Play on any user interaction
     const handleInteraction = () => {
       if (audioRef.current && !hasInteracted) {
         audioRef.current.play()
@@ -39,7 +185,6 @@ export default function Home() {
       }
     };
 
-    // Listen for various interaction events
     document.addEventListener('click', handleInteraction);
     document.addEventListener('keydown', handleInteraction);
     document.addEventListener('touchstart', handleInteraction);
@@ -51,9 +196,19 @@ export default function Home() {
     };
   }, [hasInteracted]);
 
+  // Round all percentages for display
+  const roundedBuckets = buckets.map(bucket => ({
+    ...bucket,
+    percentage: Math.round(bucket.percentage),
+    emotions: Object.fromEntries(
+      Object.entries(bucket.emotions).map(([emotion, value]) => [emotion, Math.round(value)])
+    )
+  }));
+
+  const completionPercentage = Math.min(100, Math.round(refinedNumbers / 5));
+
   return (
     <div className="relative min-h-screen font-sans w-full crt-container">
-      {/* Enhanced CRT Effects CSS */}
       <style jsx>{`
         @keyframes flicker {
           0% { opacity: 0.27861; }
@@ -208,7 +363,6 @@ export default function Home() {
           }
         }
 
-        /* Apply chromatic aberration to all text */
         .crt-container * {
           animation: textShadow 1.6s infinite;
         }
@@ -223,7 +377,6 @@ export default function Home() {
           z-index: 9999;
         }
 
-        /* Scanlines - horizontal lines only */
         .crt-overlay::before {
           content: "";
           position: absolute;
@@ -241,7 +394,6 @@ export default function Home() {
           animation: flicker 0.15s infinite;
         }
 
-        /* RGB Pixel grid overlay */
         .crt-pixels {
           position: fixed;
           top: 0;
@@ -262,7 +414,6 @@ export default function Home() {
             );
         }
 
-        /* Screen curvature and vignette */
         .crt-screen {
           position: fixed;
           top: 0;
@@ -277,7 +428,6 @@ export default function Home() {
           border-radius: 2%;
         }
 
-        /* Stronger glow */
         .crt-glow {
           position: fixed;
           top: 0;
@@ -294,7 +444,6 @@ export default function Home() {
           );
         }
 
-        /* Slight screen distortion */
         .crt-container {
           position: relative;
         }
@@ -313,13 +462,11 @@ export default function Home() {
         }
       `}</style>
 
-      {/* Audio element */}
       <audio ref={audioRef} loop>
         <source src="/audio/musicofwellness.mp3" type="audio/mpeg" />
         Your browser does not support the audio element.
       </audio>
 
-      {/* Background image */}
       <div className="absolute inset-0 -z-10">
         <img
           src="/images/background.png"
@@ -328,41 +475,39 @@ export default function Home() {
         />
       </div>
 
-      {/* Top section */}
       <div className="w-full flex flex-row justify-between items-center px-4 mt-2">
-        {/* Left: Logo + Title + Line + Complete */}
         <div className="flex flex-col w-full">
           <div className="flex items-center gap-4">
             <img src="/images/logo.svg" alt="Lumon logo" className="w-20 h-20" />
             <h1 className="text-[#0CECF7] font-semibold">Dranesville</h1>
           </div>
-          {/* line + complete box */}
           <div className="flex flex-row items-end mt-[-20px]">
             <div className="w-3/12 h-[1px] bg-[#0CECF7] rounded-full"></div>
             <div className="w-30 h-8 rounded-full flex items-center justify-center border-[1px] border-[#0CECF7] ml-[-15px]">
-              <p className="text-[13px] text-[#0CECF7]">33% Complete</p>
+              <p className="text-[13px] text-[#0CECF7]">{completionPercentage}% Complete</p>
             </div>
           </div>
         </div>
 
-        {/* Right: random codes */}
         <div className="flex flex-row items-center gap-2">
-          <p className="text-[#0CECF7] text-[12px]">{randomCode1}</p>
-          <p className="text-[#BBE9C7] text-[12px]">{randomCode2}</p>
+          <p className="text-[#0CECF7] text-[12px]">{randomCodes.code1}</p>
+          <p className="text-[#BBE9C7] text-[12px]">{randomCodes.code2}</p>
         </div>
       </div>
 
-      {/* console */}
       <div className="mt-10 px-4 ">
-        <ConsoleBox />
+        <ConsoleBox 
+          numbersGrid={numbersGrid} 
+          onNumberDropped={handleNumberDropped}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        />
       </div>
 
-      {/* buckets */}
       <div className="flex justify-center w-full mt-10 ">
-        <Buckets />
+        <Buckets buckets={roundedBuckets} onNumberDropped={handleNumberDropped} />
       </div>
 
-      {/* CRT Effects - rendered last so they're on top */}
       <div className="crt-glow"></div>
       <div className="crt-screen"></div>
       <div className="crt-pixels"></div>

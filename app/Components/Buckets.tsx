@@ -1,87 +1,49 @@
 import React from 'react'
 import IndividualBucket from './IndividualBucket'
 
-function Buckets() {
+function Buckets({ buckets, onNumberDropped }: { buckets: any[], onNumberDropped: any }) {
 
-    const BucketInfo = () => {
-      
+    const BucketInfo = ({ emotionData }: { emotionData: { [key: string]: number } }) => {
     return (
-      <div className="w-50 h-auto bg-[#1C314A] flex flex-col rounded-[10px] px-2 py-5 gap-2">
-        {/* WO */}
-        <div className="flex flex-row items-center gap-2">
-          <p className="text-[#A3F3FA] font-bold w-6 text-[13px]">WO</p>
-          <div className="w-full h-0.5 bg-[#0A1A2C] rounded overflow-hidden">
-            <div className="h-full bg-[#2BA1B5]" style={{ width: `10%` }}></div>
-          </div>
-        </div>
-
-        {/* FC */}
-        <div className="flex flex-row items-center gap-2">
-          <p className="text-[#A3F3FA] font-bold w-6 text-[13px]">FC</p>
-          <div className="w-full h-[2px] bg-[#0A1A2C] rounded overflow-hidden">
-            <div className="h-full bg-[#2BA1B5]" style={{ width: `40%` }}></div>
-          </div>
-        </div>
-
-        {/* DR */}
-        <div className="flex flex-row items-center gap-2">
-          <p className="text-[#A3F3FA] font-bold w-6 text-[13px]">DR</p>
-          <div className="w-full h-[2px] bg-[#0A1A2C] rounded overflow-hidden">
-            <div className="h-full bg-[#2BA1B5]}" style={{ width: `65%` }}></div>
-          </div>
-        </div>
-
-        {/* MA */}
-        <div className="flex flex-row items-center gap-2">
-          <p className="text-[#A3F3FA] font-bold w-6 text-[13px]">MA</p>
-          <div className="w-full h-[2px] bg-[#0A1A2C] rounded overflow-hidden">
-            <div className="h-full bg-[#2BA1B5]" style={{ width: `25%` }}></div>
-          </div>
+      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-48 bg-[#1C314A] border border-[#0CECF7] rounded-[10px] px-3 py-3 gap-2 shadow-lg z-50 backdrop-blur-sm bg-opacity-95 transition-all duration-300">
+        <div className="grid grid-cols-2 gap-2">
+          {['woe','frolic','dread','malice'].map((emotion) => (
+            <div key={emotion} className="flex flex-col gap-1">
+              <div className="flex flex-row items-center justify-between">
+                <p className="text-[#A3F3FA] font-bold text-[11px] uppercase tracking-wider">{emotion}</p>
+                <span className="text-[#A3F3FA] text-[10px] font-mono">
+                  {emotionData[emotion]}%
+                </span>
+              </div>
+              <div className="w-full h-[4px] bg-[#0A1A2C] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[#0CECF7] to-[#2BA1B5] transition-all duration-700 ease-out rounded-full"
+                  style={{ width: `${emotionData[emotion]}%` }}
+                ></div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     )
     }
 
   return (
-    <>
-            <div className='flex w-[80%] justify-between z-51'>
-          {/* bucket 1 */}
-          <div className="relative group">
-            <IndividualBucket bucketNum={1} percentage = {23} />
-            <div className="absolute left-4 bottom-10 hidden group-hover:block -z-10 justify-center">
-              <BucketInfo />
-            </div>
+    <div className='flex w-[80%] justify-between z-30 transition-all duration-500'>
+      {buckets.map((bucket, index) => (
+        <div key={index} className="relative group transition-all duration-300">
+          <IndividualBucket 
+            bucketNum={index + 1} 
+            percentage={bucket.percentage} 
+            onNumberDropped={onNumberDropped}
+            emotionData={bucket.emotions}
+          />
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out z-40">
+            <BucketInfo emotionData={bucket.emotions} />
           </div>
-          {/* bucket 2 */}
-          <div className="relative group">
-            <IndividualBucket bucketNum={2} percentage = {55}/>
-            <div className="absolute left-4 bottom-10 hidden group-hover:block -z-10 justify-center">
-              <BucketInfo />
-            </div>
-          </div>
-          {/* bucket 3 */}
-          <div className="relative group">
-            <IndividualBucket bucketNum={3} percentage = {65}/>
-            <div className="absolute left-4 bottom-10 hidden group-hover:block -z-10 justify-center">
-              <BucketInfo />
-            </div>
-          </div>
-          {/* bucket 4 */}
-          <div className="relative group">
-            <IndividualBucket bucketNum={4} percentage = {12}/>
-            <div className="absolute left-4 bottom-10 hidden group-hover:block -z-10 justify-center">
-              <BucketInfo />
-            </div>
-          </div>
-          {/* bucket 5 */}
-          <div className="relative group">
-            <IndividualBucket bucketNum={5} percentage = {4}/>
-            <div className="absolute left-4 bottom-10 hidden group-hover:block -z-10 justify-center">
-              <BucketInfo />
-            </div>
-          </div>
+        </div>
+      ))}
     </div>
-    </>
   )
 }
 
